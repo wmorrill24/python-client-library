@@ -1,0 +1,9 @@
+pyproject.toml
+src/data_ingestion/__init__.py
+src/data_ingestion/exceptions.py
+src/data_ingestion/ingestion.py
+src/data_ingestion.egg-info/PKG-INFO
+src/data_ingestion.egg-info/SOURCES.txt
+src/data_ingestion.egg-info/dependency_links.txt
+src/data_ingestion.egg-info/requires.txt
+src/data_ingestion.egg-info/top_level.txt

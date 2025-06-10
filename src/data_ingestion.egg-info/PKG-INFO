@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: data-ingestion
+Version: 0.1.0
+Summary: A Python library to ingest files into the data lake.
+Author-email: William Morrill <wkm2109@columbia.edu>
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: requests
+Requires-Dist: PyYAML
