@@ -19,4 +19,7 @@ classifiers = [
 dependencies = [
     "requests",
     "PyYAML",
+    "pandas",
+    "rich",
+    "typer[all]",
 ]
