@@ -284,7 +284,8 @@ def download_file(
                 for chunk in r.iter_content(chunk_size=1024 * 1024):
                     f.write(chunk)
 
-        logging.info(f"File downloaded successfully to: {final_save_path}")
+        logging.info("File downloaded successfully!")
+        return str(final_save_path)
     except requests.exceptions.HTTPError as http_err:
         # Provide a more user-friendly error message
         error_message = (
