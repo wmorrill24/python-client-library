@@ -8,7 +8,7 @@ Client library for uploading, searching, and downloading files from the data lak
 
 ## Setup
 Install the library from this GitHub repo into your environment using pip:
-`pip install git+https://github.com/wmorrill24/data-python-library.git`
+`pip install git+https://github.com/wmorrill24/file-management-tools.git`
 
 Import required methods from data_ingestion library at the top of your python code
 `from data_ingestion import upload_file, search_file, generate_metadata_template, download_file`
