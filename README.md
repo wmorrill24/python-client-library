@@ -24,6 +24,7 @@ Or on Windows Powershell
 ## Features
 `generate_metadata_template(filepath: str, overwrite: bool = False)`
 - Creates a blank metadata Yaml file at specified filepath.
+- Filepath should be the name of the accompanying data file, replacing the extension with .yaml
 
 `upload_file(data_file_path: str, metadata_file_path: str, api_url: str = None) -> dict`
 - Uploads a data file and its corresponding YAML metadata file by calling the data management API. - - Returns the JSON response from the API upon success.
