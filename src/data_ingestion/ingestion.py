@@ -4,13 +4,14 @@ import requests
 import logging
 from .exceptions import APIError, FileConfigurationError
 import pandas as pd
+from pathlib import Path
 # from rich.console import Console
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 API_BASE_URL = os.getenv("INGEST_API_URL", "http://localhost:8001")
 
 
-def generate_metadata_template(filepath: str = ".", overwrite: bool = False):
+def generate_metadata_template(filepath: str, overwrite: bool = False):
     """
     Generates a blank metadata YAML file to guide the user.
 
@@ -18,12 +19,17 @@ def generate_metadata_template(filepath: str = ".", overwrite: bool = False):
         filepath (str): The path where the template YAML file will be created.
         overwrite (bool): If True, will overwrite an existing file. Defaults to False.
     """
-    if os.path.isfile(filepath) and not overwrite:
+    if os.path.exists(filepath) and not overwrite:
         logging.warning(
-            f"File '{filepath}' already exists. Use overwrite=True to replace it."
+            f"File '{filepath}' already exists. Use overwrite=True to replace it. Aborting."
         )
         return
-    template_content = """
+    try:
+        directory = os.path.dirname(filepath)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
+        template_content = """
 # --- Metadata for the associated data file ---
 # Please fill out the values for each field.
 # Required fields are marked. Others are optional.
@@ -40,8 +46,6 @@ date_conducted: ""    # e.g., "2025-01-15"
 # --- Descriptive Metadata (Optional) ---
 custom_tags: ""       # e.g., "1.5 mHZ, 2V, simulation, NHP, etc."
 """
-    try:
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "w") as f:
             f.write(template_content.strip())
         logging.info(f"Template YAML created at: {filepath}")
@@ -216,6 +220,87 @@ def search_file(
             )
         # Re-raise as your custom APIError if you have one, or just re-raise the requests error
         raise http_err
+    except requests.exceptions.RequestException as req_err:
+        logging.error(f"Could not connect to API at {target_url}: {req_err}")
+        raise req_err
+
+
+def download_file(
+    file_id: str, destination_path: str = None, api_url: str = None
+) -> None:
+    """
+    Downloads a file from the data lake using its file_id by calling the backend API.
+
+    This function streams the file directly to disk, making it efficient for large files.
+
+    Args:
+        file_id (str): The unique UUID of the file to download.
+        destination_path (str): The local path where the file should be saved.
+                                If this path is an existing directory, the file's original
+                                name (provided by the server) will be used.
+                                If it's a full path including a filename, it will be saved there.
+        api_url (str, optional): The base URL of the API. Overrides the default.
+
+    Returns:
+        The final absolute path to the downloaded file on success.
+
+    Raises:
+        APIError: If the API returns an error (like 404 Not Found or 500).
+        requests.exceptions.RequestException: For network-level errors like connection failures.
+        FileNotFoundError: If the destination directory does not exist.
+    """
+    target_url = api_url or API_BASE_URL
+    download_endpoint = f"{target_url}/download/{file_id}/"
+
+    if destination_path is None:
+        final_dest_path = Path.home() / "Downloads"
+        logging.info(
+            f"No destination path provided. Defaulting to user's Downloads folder: {final_dest_path}"
+        )
+    else:
+        final_dest_path = Path(destination_path)
+
+    save_directory = (
+        final_dest_path if final_dest_path.is_dir() else final_dest_path.parent
+    )
+    save_directory.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # Use streaming to handle potentially large files without loading all into memory
+        with requests.get(download_endpoint, stream=True) as r:
+            # Check for HTTP errors like 404 Not Found or 500 Internal Server Error from the API
+            r.raise_for_status()
+            final_save_path = final_dest_path
+            if final_dest_path.is_dir():
+                content_disp = r.headers.get("content-disposition")
+                if content_disp and "filename=" in content_disp:
+                    filename_from_header = content_disp.split("filename=")[1].strip('"')
+                    final_save_path = final_dest_path / filename_from_header
+                else:
+                    final_save_path = final_dest_path / f"{file_id}.dat"
+
+            logging.info(f"Downloading file to: {final_save_path}")
+            with open(final_save_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=1024 * 1024):
+                    f.write(chunk)
+
+        logging.info(f"File downloaded successfully to: {final_save_path}")
+    except requests.exceptions.HTTPError as http_err:
+        # Provide a more user-friendly error message
+        error_message = (
+            f"API returned an error (Status {http_err.response.status_code})"
+        )
+        try:
+            # Try to get the specific detail message from your API's JSON response
+            api_detail = http_err.response.json().get("detail", http_err.response.text)
+            error_message += f": {api_detail}"
+        except Exception:
+            error_message += f": {http_err.response.text}"
+
+        logging.error(error_message)
+        # Re-raise your custom APIError or a general Exception so the calling script knows it failed
+        raise Exception(error_message) from http_err
+
     except requests.exceptions.RequestException as req_err:
         logging.error(f"Could not connect to API at {target_url}: {req_err}")
         raise req_err

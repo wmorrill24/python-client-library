@@ -4,8 +4,8 @@
 # Date format should be YYYY-MM-DD.
 
 # --- Project & Author (Required) ---
-research_project_id: "" # e.g., "Frequency Sweep"
-author: ""            # e.g., "wkm2109"
+research_project_id: "Data Calibration" # e.g., "Frequency Sweep"
+author: "wkm"            # e.g., "wkm2109"
 
 # --- Experiment Details (Optional) ---
 experiment_type: ""   # e.g., "Data Calibration"
