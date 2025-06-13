@@ -11,6 +11,28 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 API_BASE_URL = os.getenv("INGEST_API_URL", "http://localhost:8001")
 
 
+def set_api_url(url: str):
+    """
+    Sets the base URL for the API for the current session.
+
+    Args:
+        url (str): The new base URL to use for API calls.
+    """
+    global API_BASE_URL
+    API_BASE_URL = url
+    logging.info(f"API base URL has been set to: {API_BASE_URL}")
+
+
+def get_api_url() -> str:
+    """
+    Gets the currently configured base URL for the API.
+
+    Returns:
+        The current API base URL.
+    """
+    return API_BASE_URL
+
+
 def generate_metadata_template(filepath: str, overwrite: bool = False):
     """
     Generates a blank metadata YAML file to guide the user.
@@ -53,17 +75,13 @@ custom_tags: ""       # e.g., "1.5 mHZ, 2V, simulation, NHP, etc."
         raise FileConfigurationError(f"Could not create template file: {e}")
 
 
-def upload_file(
-    data_file_path: str, metadata_file_path: str, api_url: str = None
-) -> dict:
+def upload_file(data_file_path: str, metadata_file_path: str) -> dict:
     """
     The core logic for ingesting a file by calling the data management API.
 
     Args:
         data_file_path (str): The local path to the raw data file.
         metadata_file_path (str): The local path to the YAML metadata file.
-        api_url (str, optional): The base URL of the ingestion API.
-                                 Defaults to INGEST_API_URL env var or http://localhost:8001.
 
     Returns:
         A dictionary containing the JSON response from the API on success.
@@ -97,7 +115,7 @@ def upload_file(
         raise FileConfigurationError(f"Failed to read or parse YAML file: {e}")
 
     # --- 2. Prepare and call the API ---
-    target_url = api_url or API_BASE_URL
+    target_url = API_BASE_URL
     upload_endpoint = f"{target_url}/uploadfile/"
 
     files_arguments = {
@@ -150,7 +168,6 @@ def search_file(
     tags_contain: str = None,
     date_after: str = None,
     date_before: str = None,
-    api_url: str = None,
 ) -> pd.DataFrame:
     """
     Searches for file metadata via the API and returns the results as a pandas DataFrame.
@@ -164,7 +181,6 @@ def search_file(
         tags_contain: Search for a keyword within the custom_tags field.
         date_after: Filter for files conducted ON or AFTER this date (YYYY-MM-DD).
         date_before: Filter for files conducted ON or BEFORE this date (YYYY-MM-DD).
-        api_url (str, optional): The base URL of the ingestion API. Overrides default.
 
     Returns:
         A pandas DataFrame containing the search results. Returns an empty DataFrame if no results are found.
@@ -173,7 +189,7 @@ def search_file(
         APIError: If the API returns an error.
         requests.exceptions.RequestException: For network-level errors.
     """
-    target_url = api_url or API_BASE_URL
+    target_url = API_BASE_URL
     search_endpoint = f"{target_url}/search/"
 
     params = {
@@ -228,9 +244,7 @@ def search_file(
         raise req_err
 
 
-def download_file(
-    file_id: str, destination_path: str = None, api_url: str = None
-) -> None:
+def download_file(file_id: str, destination_path: str = None) -> None:
     """
     Downloads a file from the data lake using its file_id by calling the backend API.
 
@@ -238,11 +252,10 @@ def download_file(
 
     Args:
         file_id (str): The unique UUID of the file to download.
-        destination_path (str): The local path where the file should be saved.
+        destination_path (str) (optional): The local path where the file should be saved.
                                 If this path is an existing directory, the file's original
                                 name (provided by the server) will be used.
                                 If it's a full path including a filename, it will be saved there.
-        api_url (str, optional): The base URL of the API. Overrides the default.
 
     Returns:
         The final absolute path to the downloaded file on success.
@@ -252,7 +265,7 @@ def download_file(
         requests.exceptions.RequestException: For network-level errors like connection failures.
         FileNotFoundError: If the destination directory does not exist.
     """
-    target_url = api_url or API_BASE_URL
+    target_url = API_BASE_URL
     download_endpoint = f"{target_url}/download/{file_id}/"
 
     if destination_path is None:
