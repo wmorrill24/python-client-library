@@ -142,6 +142,7 @@ def upload_file(
 
 
 def search_file(
+    file_id: str = None,
     research_project_id: str = None,
     author: str = None,
     file_type: str = None,
@@ -155,6 +156,7 @@ def search_file(
     Searches for file metadata via the API and returns the results as a pandas DataFrame.
 
     Args:
+        file_id: Filter by a File's auto-generated UUID
         research_project_id: Filter by an exact research project ID.
         author: Filter by author name (case-insensitive, partial match).
         file_type: Filter by file extension, e.g., 'PDF', 'MAT' (case-insensitive).
@@ -175,6 +177,7 @@ def search_file(
     search_endpoint = f"{target_url}/search/"
 
     params = {
+        "file_id": file_id,
         "research_project_id": research_project_id,
         "author": author,
         "file_type": file_type,
