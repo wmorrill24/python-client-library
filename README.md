@@ -38,9 +38,9 @@ Downloads a file using its unique file_id. file_id can be copy-pasted from dataf
 - `destination_path:` Can be a directory (file will be saved with its original name) or a full path including a new filename. If omitted, defaults to the system's "Downloads" folder.
 - Returns the absolute path to the downloaded file.
 
-get_api_url()
+`get_api_url()`
 Returns the current api_url
 
-set_api_url(url: str)
-Sets the api url. Form should look like "http://<database-server-host-IP>:8001".
+`set_api_url(url: str)`
+Sets the api url. Form should look like `http://<database-server-host-IP>:8001`.
 
